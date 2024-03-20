@@ -1,0 +1,75 @@
+#+begin_export latex
+\section{Introduction}
+!Package \ty{util} provides functions used by the programs in package \ty{auger}.
+
+The package outline has hooks for imports, constants, variables, and
+functions.
+#+end_export
+#+begin_src go <<util.go>>=
+  package util
+
+  import (
+	  //<<Imports, Ch. \ref{ch:uti}>>
+  )
+  const (
+	  //<<Constants, Ch. \ref{ch:uti}>>
+  )
+  //<<Variables, Ch. \ref{ch:uti}>>
+  //<<Functions, Ch. \ref{ch:uti}>>
+#+end_src
+#+begin_export latex
+\subsection{PrintInfo}
+  !\texttt{PrintInfo} prints a program's name, version, and compilation
+  !date. It also prints the author, email address, and license of the
+  !\texttt{auger} package. Then it exits. To achieve this, we wrap the
+  !generic function for printing program information from the package
+  !\texttt{clio}.
+#+end_export
+#+begin_src go <<Functions, Ch. \ref{ch:uti}>>=
+  func PrintInfo(name string) {
+          clio.PrintInfo(name, version, date, author, email,
+                  license)
+          os.Exit(0)
+  }
+#+end_src
+#+begin_export latex
+We import \ty{clio} and \ty{os}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:uti}>>=
+  "github.com/evolbioinf/clio"
+  "os"
+#+end_src
+#+begin_export latex
+\ty{author}, \ty{email}, and \ty{license} are constants.
+#+end_export
+#+begin_src go <<Constants, Ch. \ref{ch:uti}>>=
+  author = "Bernhard Haubold"
+  email = "haubold@evolbio.mpg.de"
+  license = "Gnu General Public License, " +
+          "https://www.gnu.org/licenses/gpl.html"
+#+end_src
+#+begin_export latex
+The values of \ty{version} and \ty{date} are variables that are
+injected at compile time.
+#+end_export
+#+begin_src go <<Variables, Ch. \ref{ch:uti}>>=
+  var version, date string
+#+end_src
+#+begin_export latex
+\subsection{Check}
+!\ty{Check} tests the error passed and calls log.Fatal on the error if
+!it isn't \ty{nil}.
+#+end_export
+#+begin_src go <<Functions, Ch. \ref{ch:uti}>>=
+  func Check(err error) {
+	  if err != nil {
+		  log.Fatal(err)
+	  }
+  }
+#+end_src
+#+begin_export latex
+We import \ty{log}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:uti}>>=
+  "log"
+#+end_src

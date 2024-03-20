@@ -1,0 +1,280 @@
+#+begin_export latex
+\section{Introduction}
+The program \ty{mewin} merges overlapping windows returned by
+\ty{macle}. The output from \ty{macle} consists of three columns,
+sequence accession, midpoint of sliding window, and $\cm$. The
+midpoints are assumed to be in ascending order. For windows consisting
+of \ty{N}, \ty{macle} returns $\cm=-1$. The following example output
+comes from a sliding window analysis with 10 kb windows, hence the
+first midpoint is 5000; in each round the window advances by the
+default step length, one tenth of the window length, 1 kb:
+\begin{verbatim}
+NC_000001.11    5000    -1.0000
+NC_000001.11    6000    -1.0000
+...
+NC_000001.11    15000   0.0850
+NC_000001.11    16000   0.0671
+NC_000001.11    17000   0.0720
+NC_000001.11    18000   0.0736
+...
+\end{verbatim}
+The program \ty{mewin} compares the $\cm$ value of the $i$-th window,
+$\cm^i$ to a threshold, $t$. If $\cm^i\ge t$, the window is a
+candidate for merger. Any overlapping window $j$ with $\cm^j\ge t$ is
+merged.
+
+The program runs in two modes, maximizing and minimizing. In the
+default maximizing mode just described, overlapping windows with
+$\cm^i\ge t$ are merged. In minimizing mode, overlapping windows with
+$\cm^i\le t$ are merged.
+
+The output of \ty{mewin} consists of four columns, the accession, the
+start and end positions of the interval, and the average $\cm$ value
+of the windows merged to form that interval.
+
+\section{Implementation}
+The program \ty{mewin} has hooks for imports, functions, and the logic
+of the main function.
+#+end_export
+#+begin_src go <<mewin.go>>=
+  package main
+
+  import (
+	  //<<Imports, Ch. \ref{ch:me}>>
+  )
+
+  //<<Functions, Ch. \ref{ch:me}>>
+  func main() {
+	  //<<Main function , Ch. \ref{ch:me}>>
+  }
+#+end_src
+#+begin_export latex
+In the main function we prepare the \ty{log} package, set the usage,
+declare the options, parse the options, respond to the options, and
+parse the input files.
+#+end_export
+#+begin_src go <<Main function , Ch. \ref{ch:me}>>=
+  clio.PrepLog("mewin")
+  //<<Set usage, Ch. \ref{ch:me}>>
+  //<<Declare options, Ch. \ref{ch:me}>>
+  //<<Parse options, Ch. \ref{ch:me}>>
+  //<<Respond to options, Ch. \ref{ch:me}>>
+  //<<Parse input files, Ch. \ref{ch:me}>>
+#+end_src
+#+begin_export latex
+We import \ty{clio}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "github.com/evolbioinf/clio"
+#+end_src
+#+begin_export latex
+The usage consists of three parts, the actual usage message, an
+explanation of the purpose of \ty{mewin}, and an example command.
+#+end_export
+#+begin_src go <<Set usage, Ch. \ref{ch:me}>>=
+  u := "mewin [option]... [file]..."
+  p := "Merge overlapping windows returned by macle."
+  e := "mewin -t 0.9984 foo.cm"
+  clio.Usage(u, p, e)
+#+end_src
+#+begin_export latex
+Apart from the version, we declare three additional options, the
+window length, the $\cm$ threshold, and minimizing instead of
+maximizing.
+#+end_export
+#+begin_src go <<Declare options, Ch. \ref{ch:me}>>=
+  optV := flag.Bool("v", false, "version")
+  optW := flag.Int("w", 10000, "window length")
+  optT := flag.Float64("t", 0.99, "C_m threshold")
+  m := "minimizing, i. e. merge if C_m <= t " +
+	  "(default maximizing)"
+  optI := flag.Bool("i", false, m)
+#+end_src
+#+begin_export latex
+We import \ty{flag}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "flag"
+#+end_src
+#+begin_export latex
+We parse the options.
+#+end_export
+#+begin_src go <<Parse options, Ch. \ref{ch:me}>>=
+  flag.Parse()
+#+end_src
+#+begin_export latex
+We respond to a version request, as this stops the program.
+#+end_export
+#+begin_src go <<Respond to options, Ch. \ref{ch:me}>>=
+  if *optV {
+	  util.PrintInfo("mewin")
+  }
+#+end_src
+#+begin_export latex
+We import \ty{util}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "github.com/evolbioinf/auger/util"
+#+end_src
+#+begin_export latex
+The remaining tokens on the command line are taken as file
+names. These files are parsed using the function \ty{ParseFiles},
+which applies the function \ty{parse} to each one of them. The
+function \ty{parse} takes as arguments the window length, the
+threshold, and whether or not we are in minimizing mode.
+#+end_export
+#+begin_src go <<Parse input files, Ch. \ref{ch:me}>>=
+  files := flag.Args()
+  clio.ParseFiles(files, parse, *optW, *optT, *optI)
+#+end_src
+#+begin_export latex
+Inside \ty{parse}, we retrieve the three arguments just passed,
+prepare the variables needed for the scan, construct a scanner, and
+analyze each window scanned.
+#+end_export
+#+begin_src go <<Functions, Ch. \ref{ch:me}>>=
+  func parse(r io.Reader, args ...interface{}) {
+	  //<<Retrieve arguments, Ch. \ref{ch:me}>>
+	  //<<Prepare variables, Ch. \ref{ch:me}>>
+	  sc := bufio.NewScanner(r)
+	  for sc.Scan() {
+		  //<<Analyze window, Ch. \ref{ch:me}>>
+	  }
+  }
+#+end_src
+#+begin_export latex
+We import \ty{io} and \ty{bufio}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "io"
+  "bufio"
+#+end_src
+#+begin_export latex
+We use type assertion to retrieve the window length, the threshold,
+and whether or not the program is in minimizing mode.
+#+end_export
+#+begin_src go <<Retrieve arguments, Ch. \ref{ch:me}>>=
+  w := args[0].(int)
+  threshold := args[1].(float64)
+  minimize := args[2].(bool)
+#+end_src
+#+begin_export latex
+While iterating across the ordered windows, we keep track of five
+quantities,
+\begin{enumerate}
+\item the sum of $\cm$ values, \ty{sum}
+\item the number of windows summed, \ty{n}
+\item the start position of the current interval, \ty{is}; this is
+  initialized to -1 to indicate that currently there is no open
+  interval.
+\item the end position of the current interval, \ty{ie}
+\item the name of the previous sequence, \ty{prevSeq}
+\end{enumerate}
+#+end_export
+#+begin_src go <<Prepare variables, Ch. \ref{ch:me}>>=
+  sum := 0.0
+  n := 0
+  is := -1
+  ie := is
+  prevSeq := ""
+#+end_src
+#+begin_export latex
+To analyze the window, we split it into fields and retrieve the name
+of the current sequence. Then we retrieve the other two values that
+make up the interval, the midpoint and the $\cm$. Based on the current
+interval, we have three decisions to take: whether or not to output
+the interval, whether or not the current window is a merge candidate,
+and whether or not to actually merge the window. After that, we
+prepare analyzing the next window by setting the previous sequence
+accession.
+#+end_export
+#+begin_src go <<Analyze window, Ch. \ref{ch:me}>>=
+  fields := strings.Fields(sc.Text())
+  curSeq := fields[0]
+  //<<Retrieve midpoint and $\cm$, Ch. \ref{ch:me}>>
+  //<<Output interval? Ch. \ref{ch:me}>>
+  //<<Is window a merge candidate? Ch. \ref{ch:me}>>
+  //<<Merge window? Ch. \ref{ch:me}>>
+  prevSeq = curSeq
+#+end_src
+#+begin_export latex
+We import \ty{strings}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "strings"
+#+end_src
+#+begin_export latex
+We retrieve the midpoint and $\cm$. From the midpoint we calculate the
+window start and end. If $\cm < 0$, we skip the rest of the analysis.
+#+end_export
+#+begin_src go <<Retrieve midpoint and $\cm$, Ch. \ref{ch:me}>>=
+  mi, err := strconv.ParseFloat(fields[1], 64)
+  util.Check(err)
+  ws := int((mi - float64(w) / 2.0) + 1.0)
+  we := int(mi + float64(w) / 2.0)
+  cm, err := strconv.ParseFloat(fields[2], 64)
+  util.Check(err)
+  if cm < 0 {
+	  continue
+  }
+#+end_src
+#+begin_export latex
+We import \ty{strconv}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "strconv"
+#+end_src
+#+begin_export latex
+An open interval may get closed and then output. There are two
+conditions that lead to closure: the sequence accession changes, or
+the start of the current window has moved beyond the end of the
+interval. A closed interval is output and the interval start is reset
+to -1.
+#+end_export
+#+begin_src go <<Output interval? Ch. \ref{ch:me}>>=
+  if is >= 0 {
+	  if curSeq != prevSeq || ws > ie {
+		  avg := sum / float64(n)
+		  fmt.Printf("%s\t%d\t%d\t%.3g\n",
+			  prevSeq, is, ie, avg)
+		  is = -1
+	  }
+  }
+#+end_src
+#+begin_export latex
+We import \ty{fmt}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "fmt"
+#+end_src
+#+begin_export latex
+Whether or not the current window is a merge candidate, depends on the
+program's mode. In default maximizing mode $\cm\ge t$ makes the window
+a candidate, otherwise it's $\cm\le t$.
+#+end_export
+#+begin_src go <<Is window a merge candidate? Ch. \ref{ch:me}>>=
+  isCand := false
+  if !minimize {
+	  if cm >= threshold {
+		  isCand = true
+	  }
+  } else {
+	  if cm <= threshold {
+		  isCand = true
+	  }
+  }
+#+end_src
+#+begin_export latex
+The window end becomes the end of the current interval. If the window
+start is greater than the interval end, a new interval is created that
+starts at the window start. Otherwise the initial shifting of the
+interval end amounts to a merge.
+#+end_export
+#+begin_src go <<Merge window? Ch. \ref{ch:me}>>=
+  if isCand {
+	  ie = we
+	  if ws > ie {
+		  is = ws
+	  }
+  }
+#+end_src

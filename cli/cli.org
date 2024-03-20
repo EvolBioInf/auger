@@ -1,0 +1,82 @@
+#+begin_export latex
+\section{Pick Unique Regions}
+To pick unique regions from a genome, we need its raw DNA sequence. We
+download this in ``dehydrated'' form using the program \ty{datasets}.
+#+end_export
+#+begin_src sh <<cli>>=
+  download genome accession GCF_000001405.40 \
+	   --dehydrated --filename genome.zip
+#+end_src
+#+begin_export latex
+We unzip the downloaded file into the directory \ty{genome}.
+#+end_export
+#+begin_src sh <<cli>>=
+  unzip genome.zip -d genome
+#+end_src
+#+begin_export latex
+The contents of the directory \ty{genome} need to be ``rehydrated''
+before they can be used.
+#+end_export
+#+begin_src sh <<cli>>=
+  datasets rehydrate --directory genome
+#+end_src
+#+begin_export latex
+To calculate the \ty{macle} index, we store its path in a convenient
+variable. Then we extract the reference part of the genome using the
+program \ty{getSeq}, which is part of the
+biobox\footnote{\ty{github.com/evolbioinf/biobox}}. This part of the
+genome is piped through \ty{macle} and the resulting index is saved to
+the file \ty{hs.idx}. The index calculation takes approximately an
+hour and 200 GB of RAM.
+#+end_export
+#+begin_src sh <<cli>>=
+  p="genome/ncbi_dataset/data/GCF_000001405.40"
+  p="$p/GCF_000001405.40_GRCh38.p14_genomic.fna"
+  getSeq NC_ $p | macle -i > hs.idx
+#+end_src
+#+begin_export latex
+As an alternative to calculating the index, it can be downloaded from
+\begin{verbatim}
+https://doi.org/10.17617/3.4IKQAG
+\end{verbatim}
+Given that the index is now available as \ty{hs.idx}, we can scan it
+with \ty{macle} using 10 kb windows.
+#+end_export
+#+begin_src sh <<cli>>=
+  macle -w 10000 -i hs.idx > hs.cm
+#+end_src
+#+begin_export latex
+The resulting file, \ty{hs.cm} contains the $\cm$ values across the
+human genome.  We are only interested in unique regions, which have
+$\cm\approx 1$. The exact threshold for calling a window unique is
+calculated as a function of sequence length and GC content. We look up
+these two values from the \ty{macle} index,
+#+end_export
+#+begin_src sh <<cli>>=
+  macle -l hs.idx
+#+end_src
+#+begin_export latex
+to find
+\begin{verbatim}
+...
+len:    3088286401
+gc:     0.4087
+...
+\end{verbatim}
+So we can use the program \ty{macle2go} to calculate the threshold,
+$t=0.9954$.
+#+end_export
+#+begin_src sh <<cli>>=
+  macle2go quantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
+#+end_src
+#+begin_export latex
+We use the program \ty{mewin}, which is also part of this package, to
+merge the windows where $\cm\ge t$ and store the resulting 1243
+intervals in the file \ty{hs\_iv.txt}.
+#+end_export
+#+begin_src sh <<cli>>=
+  mewin -w 10000 -t 0.9954 hs.cm > hs_idx.txt
+#+end_src
+#+begin_export latex
+
+#+end_export

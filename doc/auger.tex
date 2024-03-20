@@ -1,0 +1,24 @@
+\documentclass[a4paper]{report}
+\input{header}
+\begin{document}
+\pagestyle{noweb}
+
+\title{\ty{auger}: Analyze Unique Genomic Regions}
+\author{Beatriz Vieira Mourato \& Bernhard Haubold}
+\date{\input{date.txt}\!\!, \input{version.txt}}
+\maketitle
+
+\tableofcontents
+
+\chapter{Introduction}
+\input{intro}
+\chapter{Drive the Analysis: \ty{analysis.sh}}
+\input{analysis}
+\chapter{Merge Windows: \ty{mewin}}\label{ch:me}
+\input{mewin}
+\chapter{Utility functions: \ty{util}}\label{ch:uti}
+\input{util}
+
+%%\bibliography{ref}
+\end{document}
+

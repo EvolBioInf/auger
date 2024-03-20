@@ -1,0 +1,17 @@
+*/*.go
+cli/genome*
+cli/cli.sh
+
+doc/analysis.tex
+doc/auger.aux
+doc/auger.dvi
+doc/auger.log
+doc/auger.pdf
+doc/auger.ps
+doc/auger.toc
+doc/date.txt
+doc/mewin.tex
+doc/util.tex
+doc/version.txt
+
+mewin/mewin
