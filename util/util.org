@@ -18,8 +18,8 @@ functions.
   //<<Functions, Ch. \ref{ch:uti}>>
 #+end_src
 #+begin_export latex
-\subsection{PrintInfo}
-  !\texttt{PrintInfo} prints a program's name, version, and compilation
+\section{\ty{PrintInfo}}
+  !\texttt{PrintInfo} prints a program's name, version, and commit
   !date. It also prints the author, email address, and license of the
   !\texttt{auger} package. Then it exits. To achieve this, we wrap the
   !generic function for printing program information from the package
@@ -56,8 +56,8 @@ injected at compile time.
   var version, date string
 #+end_src
 #+begin_export latex
-\subsection{Check}
-!\ty{Check} tests the error passed and calls log.Fatal on the error if
+\section{\ty{Check}}
+!\ty{Check} tests the error passed and calls \ty{log.Fatal} on the error if
 !it isn't \ty{nil}.
 #+end_export
 #+begin_src go <<Functions, Ch. \ref{ch:uti}>>=

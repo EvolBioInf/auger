@@ -1,10 +1,11 @@
 #+begin_export latex
 \section{Pick Unique Regions}
 To pick unique regions from a genome, we need its raw DNA sequence. We
-download this in ``dehydrated'' form using the program \ty{datasets}.
+download this in ``dehydrated'' form using the program
+\ty{datasets}\footnote{\ty{ncbi.nlm.nih.gov/datasets}}.
 #+end_export
 #+begin_src sh <<cli>>=
-  download genome accession GCF_000001405.40 \
+  datasets download genome accession GCF_000001405.40 \
 	   --dehydrated --filename genome.zip
 #+end_src
 #+begin_export latex
@@ -21,18 +22,19 @@ before they can be used.
   datasets rehydrate --directory genome
 #+end_src
 #+begin_export latex
-To calculate the \ty{macle} index, we store its path in a convenient
-variable. Then we extract the reference part of the genome using the
-program \ty{getSeq}, which is part of the
-biobox\footnote{\ty{github.com/evolbioinf/biobox}}. This part of the
-genome is piped through \ty{macle} and the resulting index is saved to
-the file \ty{hs.idx}. The index calculation takes approximately an
-hour and 200 GB of RAM.
+To calculate the \ty{macle} index of the genome sequence, we store the
+path of the sequence in a convenient variable. Then we extract the
+reference part of the genome using the program
+\ty{getSeq}\footnote{\ty{github.com/evolbioinf/biobox}} and save it to
+\ty{hs.fasta}. We index \ty{hs.fasta} using \ty{macle} and save the
+index to \ty{hs.idx}. This takes approximately an hour and 200 GB of
+RAM.
 #+end_export
 #+begin_src sh <<cli>>=
   p="genome/ncbi_dataset/data/GCF_000001405.40"
   p="$p/GCF_000001405.40_GRCh38.p14_genomic.fna"
-  getSeq NC_ $p | macle -i > hs.idx
+  getSeq NC_ $p > hs.fasta
+  macle -s hs.fasta > hs.idx
 #+end_src
 #+begin_export latex
 As an alternative to calculating the index, it can be downloaded from
@@ -46,25 +48,24 @@ with \ty{macle} using 10 kb windows.
   macle -w 10000 -i hs.idx > hs.cm
 #+end_src
 #+begin_export latex
-The resulting file, \ty{hs.cm} contains the $\cm$ values across the
-human genome.  We are only interested in unique regions, which have
+The file \ty{hs.cm} now contains the $\cm$ values across the human
+genome.  We are only interested in unique regions, which have
 $\cm\approx 1$. The exact threshold for calling a window unique is
 calculated as a function of sequence length and GC content. We look up
-these two values from the \ty{macle} index,
+these two quantities from the \ty{macle} index,
 #+end_export
 #+begin_src sh <<cli>>=
   macle -l hs.idx
 #+end_src
 #+begin_export latex
-to find
 \begin{verbatim}
 ...
 len:    3088286401
 gc:     0.4087
 ...
 \end{verbatim}
-So we can use the program \ty{macle2go} to calculate the threshold,
-$t=0.9954$.
+The threshold itself is calculated with the program \ty{macle2go},
+which gives us $t=0.9954$.
 #+end_export
 #+begin_src sh <<cli>>=
   macle2go quantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
@@ -75,8 +76,84 @@ merge the windows where $\cm\ge t$ and store the resulting 1243
 intervals in the file \ty{hs\_iv.txt}.
 #+end_export
 #+begin_src sh <<cli>>=
-  mewin -w 10000 -t 0.9954 hs.cm > hs_idx.txt
+  mewin -w 10000 -t 0.9954 hs.cm > hs_iv.txt
 #+end_src
 #+begin_export latex
+Next, we annotate the unique regions just found.
 
+\section{Annotate Unique Regions}
+We annotate our unique regions using the program \ty{annotate} from
+the \ty{gin} repo\footnote{\ty{github.com/evolbioinf/gin}}. It takes
+as input the list of unique regions just generated and the GFF file
+for the human genome, and returns the gene identifiers of the genes
+whose promoters intersect the unique regions. By default, a promoter
+is a 4 kb interval centered on a transcription start site. We begin by
+downloading the GFF file using datasets.
 #+end_export
+#+begin_src sh <<cli>>=
+  datasets download genome accession GCF_000001405.40 \
+	   --dehydrated --filename gff.zip --include gff3
+  unzip -d gff gff.zip
+  datasets rehydrate --directory gff
+  p="gff/ncbi_dataset/data/GCF_000001405.40/"
+  mv $p/genomic.gff hs.gff
+#+end_src
+#+begin_export latex
+Then we run \ty{annotate} on the unique intervals and save the observed gene
+identifiers in the file \ty{hsObsId.txt}.
+#+end_export
+#+begin_src sh <<cli>>=
+  annotate -c hs.gff hs_iv.txt > hsObsId.txt
+#+end_src
+#+begin_export latex
+Having annotated the unique regions with genes, we annotate the genes
+with GO terms. We use the program \ty{ego}, also from the \ty{gin}
+package, to map our gene list to their GO terms. This requires a map
+between gene IDs and GO terms, which we provide in a gene2go
+file. These files can also be downloaded from
+\begin{verbatim}
+https://doi.org/10.17617/3.4IKQAG
+\end{verbatim}
+Alternatively, they can be constructed from scratch as described in
+Chapter~\ref{ch:g2g}.
+#+end_export
+#+begin_src sh <<cli>>=
+  ego -g hs.gff -o hs.g2g hsObsId.txt > hsGoSym.txt
+#+end_src
+#+begin_export latex
+Each row in hsGoSym.txt consists of a GO term, the number of genes it
+contains, the GO category it belongs to, the description of that GO
+category, and the gene symbols. The table is sorted by the number of
+genes associated with a term, here is an extract:
+\begin{verbatim}
+GO:0008150 1032 Process biological_process AATF ABCB9...
+GO:0005575 1022 Component cellular_component AATF ABCB9...
+GO:0003674 946 Function molecular_function AATF ABCB9...
+GO:0009987 935 Process cellular process AATF ABTB1...
+GO:0005622 929 Component intracellular anatomical structure...
+GO:0043226 843 Component organelle AATF ABCB9...
+GO:0043229 828 Component intracellular organelle AATF ABCB9...
+GO:0043227 800 Component membrane-bounded organelle AATF ABCB9...
+GO:0005488 780 Function binding AATF ABCB9...
+GO:0043231 755 Component intracellular membrane-bounded...
+...
+\end{verbatim}
+The question is, do any of these GO terms contain more genes than
+expected by chance? In other words, are unique regions in the human
+genome enriched for certain biological functions?
+#+end_export
+#+begin_export latex
+\section{Enrichment Analysis}
+We use Monte Carlo simulation to assess the functional enrichment. For
+this we shuffle the observed 1243 intervals across the genome and
+annotate them again. The frequency with which we observe an occupancy
+at least as large as that in the unshuffled data is our desired
+$P$-value. To calculate it, we construct a pipeline consisting of
+three steps, shuffling, annotating intervals with genes, and
+annotating genes with GO terms to assess their enrichment.
+#+end_export
+#+begin_src sh <<cli>>=
+  shuffle -n 100000 hs.gff hs_iv.txt |
+      annotate -c hs.gff |
+      ego -o hs.g2g hsObsId.txt > hsEnr.txt
+#+end_src

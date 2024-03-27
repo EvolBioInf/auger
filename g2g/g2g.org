@@ -1,0 +1,251 @@
+#+begin_export latex
+\section{Introduction}
+As described in Chapter~\ref{ch:cli}, gene2go files are used by
+\ty{ego} to calculate the enrichment of GO terms.  Table~\ref{tab:g2g}
+shows an example of such a gene2go table. It has eight columns, of
+which four are significant, gene ID, GO ID, GO term, and category. The
+insignificant columns are denoted by dots.
+\begin{table}
+  \caption{Example gene2go table.}\label{tab:g2g}
+  \begin{center}
+    \resizebox{\textwidth}{!}{
+  \begin{tabular}{cccccccc}
+    \hline
+    Taxon ID & Gene ID & GO ID & Evidence & Qualifier & GO term &
+    Pubmed & Category\\\hline
+    . & 10006 & GO:0001501 & . & . & skeletal system development & . & Process\\
+    . & 1000 &  GO:0001501 & . & . & skeletal system development & . & Process\\
+    ...\\
+    \hline
+  \end{tabular}
+  }
+\end{center}
+\end{table}
+Such a file is constructed from three maps, genes to proteins,
+proteins go GO IDs, and GO IDs to GO terms. In the following we
+construct each of these maps for the human genome in turn before we
+join them to construct the final gene2go file.
+\section{Map Genes to Proteins}
+To map genes to protein, we need the human GFF file, which we download
+using \ty{datasets}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  datasets download genome accession GCF_000001405.40 \
+	   --include gff3 --filename gff3.zip
+#+end_src
+#+begin_export latex
+We unzip the downloaded data and move it to a convenient location.
+#+end_export
+#+begin_src sh <<g2g>>=
+  unzip -d gff3 gff3.zip
+  mv gff3/ncbi_dataset/data/GCF_000001405.40/genomic.gff \
+     hs.gff
+#+end_src
+#+begin_export latex
+For each CDS in the human genome, we extract the database
+cross-reference annotation. From that we pick the gene and protein IDs
+by calling \ty{pick.awk}, which we still need to write.
+#+end_export
+#+begin_src sh <<g2g>>=
+  awk '$3 == "CDS"' hs.gff |
+      tr ';' '\n' |
+      grep '^Dbxref' |
+      sed 's/Dbxref=//' |
+      tr ':,' ' ' |
+      awk -f pick.awk > gen2pro.txt
+#+end_src
+#+begin_export latex
+In the program \ty{pick.awk}, we store the IDs of the genes and
+proteins found in each set of database cross-references, and print
+them at the end.
+#+end_export
+#+begin_src awk <<pick.awk>>=
+  {
+    ##<<Store genes and proteins, Ch. \ref{ch:g2g}>>
+  }
+  END {
+    ##<<Print genes and proteins, Ch. \ref{ch:g2g}>>
+  }
+#+end_src
+#+begin_export latex
+Given a row of database cross-references, we walk along its tokens and
+look for the keys ``GeneID'' for the gene ID and ``GenBank'' for the
+protein ID. Then we store these two values in a hash map.
+#+end_export
+#+begin_src awk <<Store genes and proteins, Ch. \ref{ch:g2g}>>=
+  for (i = 1; i <= NF; i += 2) {
+    if ($i == "GeneID")
+      g = $(i+1)
+    if ($i == "GenBank")
+      p = $(i+1)
+  }
+  map[g] = p
+#+end_src
+#+begin_export latex
+At the end we iterate across the gene IDs and print them together with
+the corresponding protein ID.
+#+end_export
+#+begin_src awk <<Print genes and proteins, Ch. \ref{ch:g2g}>>=
+  for (g in map)
+    printf "%s\t%s\n", g, map[g]
+#+end_src
+#+begin_export latex
+\section{Map Proteins to GO IDs}
+Proteins are mapped to their GO IDs using homology searches. So we
+begin by downloading the human proteome, again using our friend
+\ty{datasets}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  datasets download genome accession GCF_000001405.40 \
+	   --include protein --filename protein.zip
+#+end_src
+#+begin_export latex
+We unzip the downloaded file and move the proteome to a convenient
+place.
+#+end_export
+#+begin_src sh <<g2g>>=
+  unzip -d protein protein.zip
+  mv protein/ncbi_dataset/data/GCF_000001405.40/protein.faa hs.faa
+#+end_src
+#+begin_export latex
+We use the eggnog software to map proteins to GO
+IDs~\cite{hue19:egg,can21:egg}. To start with, we install the eggnog
+software by following the instructions posted in their github
+repository\footnote{\ty{github.com/eggnogdb/eggnog-mapper}}. This
+seems to boil down to four steps, clone the software, change into its
+directory, setup the system, and download the eggnog data. The last
+two steps, system setup and data download, take some time and require
+a bit of disk space, so be prepared.
+#+end_export
+#+begin_src sh <<g2g>>=
+  git clone https://github.com/eggnogdb/eggnog-mapper
+  cd eggnog-mapper/
+  python setup.py install
+  python download_eggnog_data.py
+#+end_src
+#+begin_export latex
+We run the eggnog-mapper in ultra-sensitive mode and ask for
+``non-electronic'' GO IDs, i. e. high-quality annotations. The
+output is stored in the directory \ty{res}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  emapper.py --cpu 64 -o human --output_dir res/ \
+	     --override -m diamond --sensmode ultra-sensitive \
+	     --dmnd_ignore_warnings -i hs.faa \
+	     --evalue 0.001 --score 60 --pident 40 \
+	     --query_cover 20 --subject_cover 20 \
+	     --itype proteins --tax_scope inner_narrowest \
+	     --target_orthologs all \
+	     --go_evidence non-electronic --dbmem \
+	     --tax_scope eukaryota --pfam_realign none \
+	     --report_orthologs --decorate_gff yes
+#+end_src
+#+begin_export latex
+The directory \ty{res} now contains the file
+\begin{verbatim}
+human.emapper.annotations
+\end{verbatim}
+Column 1 of this file contains the protein ID, column 10 the
+corresponding GO IDs. We convert this into pairs of protein IDs and GO
+IDs.
+#+end_export
+#+begin_src sh <<g2g>>=
+  grep -v '^#' human.emapper.annotations |
+      cut -f 1,10 |
+      tr ',' ' ' |
+      awk '{for(i=2;i<=NF;i++)printf "%s\t%s\n", $1, $i}' \
+	  > pro2go.txt
+#+end_src
+#+begin_export latex
+\section{Map GO IDs to GO Terms}
+GO terms give biological meaning to GO IDs, for example the GO ID
+GO:0001501 refers to the term ``skeletal system development''. Apart
+from its term, a GO ID is also mapped to a category, which we would
+like to include in our map. Our example GO ID refers to the category
+``Process''. GO IDs, terms, and categories are supplied in the file
+\ty{gene2go}, which we download.
+#+end_export
+#+begin_src sh <<g2g>>=
+  wget ftp.ncbi.nih.gov/gene/DATA/gene2go.gz
+#+end_src
+#+begin_export latex
+We unzip the file and count its entries, 94,023,495 in our case.
+#+end_export
+#+begin_src sh <<g2g>>=
+  gunzip gene2go.gz
+  wc -l gene2go
+#+end_src
+#+begin_export latex
+We suspect that the file \ty{gene2go} contains some redundancy and
+hence convert it into a non-redundant map between GO IDs, terms, and
+categories.
+#+end_export
+#+begin_src sh <<g2g>>=
+  grep -v '^#' gene2go |
+      cut -f 3,6,8 |
+      awk '{if(!id[$1]){print;id[$1]=1}}' > go2term.txt
+#+end_src
+#+begin_export latex
+Our suspicion was correct, the file \ty{go2term.txt} only contains
+27,196 entries, down from 94 million.
+#+end_export
+#+begin_src sh <<g2g>>=
+  wc -l go2term.txt
+#+end_src
+#+begin_export latex
+\section{Join Tables}
+We now have three tables in hand
+\begin{enumerate}
+\item \ty{gen2pro.txt}: gene IDs mapped to protein IDs
+\item \ty{pro2go.txt}: protein IDs mapped to GO IDs
+\item \ty{go2term.txt}: go IDs mapped to GO terms (and categories)
+\end{enumerate}
+Our aim is to construct the table shown in Table~\ref{tab:g2g}.
+To get this, we begin by joining \ty{gen2pro.txt} and \ty{pro2go.txt}
+on the protein ID. For this, we sort \ty{gen2pro.txt} and \ty{pro2go}
+on the protein ID.
+#+end_export
+#+begin_src sh <<g2g>>=
+  sort -k 2,2 gen2pro.txt > t; mv t gen2pro.txt
+  sort -k 1,1 pro2go.txt > t; mv t pro2go.txt
+#+end_src
+#+begin_export latex
+Now we join these tables, extract the gene IDs and GO terms, and save
+the result in the file \ty{gen2go.txt}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  join -1 2 gen2pro.txt pro2go.txt |
+      awk '{printf "%s\t%s\n", $2, $3}' > gen2go.txt
+#+end_src
+#+begin_export latex
+Next, we join \ty{gen2go.txt} with \ty{go2term.txt} on the GO ID. So
+we sort both files on that column.
+#+end_export
+#+begin_src sh <<g2g>>=
+  sort -k 2,2 gen2go.txt > t; mv t gen2go.txt
+  sort -k 1,1 go2term.txt > t; mv t go2term.txt
+#+end_src
+#+begin_export latex
+Now we join these two tables and generate the desired gene2go table by
+calling the script \ty{print.awk}, which we still need to write. Note
+that here \ty{join} takes as delimiter (\ty{-t}) the TAB character,
+which is entered in single quotes by pressing C-v TAB. We save the
+final table in the file \ty{hs.g2g}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  join -t '      ' -1 2 gen2go.txt go2term.txt |
+      awk -F '\t' -f print.awk  > hs.g2g
+#+end_src
+#+begin_export latex
+In \ty{print.awk}, we generate the eight columns of
+Table~\ref{tab:g2g}. We do this by first declaring a formatting
+template, which is then used for every line parsed.
+#+end_export
+#+begin_src awk <<print.awk>>=
+  BEGIN {
+    tmpl = ".\t%s\t%s\t.\t.\t%s\t.\t%s\n"
+  }
+  {
+    printf tmpl, $2, $1, $3, $4
+  }
+#+end_src

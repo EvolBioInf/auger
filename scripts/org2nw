@@ -10,6 +10,7 @@ s/^#+begin_src *[hH][tT][mM][lL] *<</<</
 s/^#+begin_src *[rR] *<</<</
 s/^#+begin_src *[tT][eE][xX][tT] *<</<</
 s/\/\/ *<</<</
+s/## *<</<</
 /^#+end/d
 /^\*/d
 s/^  //
