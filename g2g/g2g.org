@@ -43,8 +43,10 @@ We unzip the downloaded data and move it to a convenient location.
 #+end_src
 #+begin_export latex
 For each CDS in the human genome, we extract the database
-cross-reference annotation. From that we pick the gene and protein IDs
-by calling \ty{pick.awk}, which we still need to write.
+cross-reference annotation. Since keys like ``GenBank'' and
+``Genbank'' are synonymous, we convert everything to upper case. From
+that we pick the gene and protein IDs by calling \ty{pick.awk}, which
+we still need to write.
 #+end_export
 #+begin_src sh <<g2g>>=
   awk '$3 == "CDS"' hs.gff |
@@ -52,6 +54,7 @@ by calling \ty{pick.awk}, which we still need to write.
       grep '^Dbxref' |
       sed 's/Dbxref=//' |
       tr ':,' ' ' |
+      tr [:lower:] [:upper:] |
       awk -f pick.awk > gen2pro.txt
 #+end_src
 #+begin_export latex
@@ -69,14 +72,14 @@ them at the end.
 #+end_src
 #+begin_export latex
 Given a row of database cross-references, we walk along its tokens and
-look for the keys ``GeneID'' for the gene ID and ``GenBank'' for the
-protein ID. Then we store these two values in a hash map.
+look for the all-caps keys ``GENEID'' for the gene ID and ``GENBANK''
+for the protein ID. Then we store these two values in a hash map.
 #+end_export
 #+begin_src awk <<Store genes and proteins, Ch. \ref{ch:g2g}>>=
   for (i = 1; i <= NF; i += 2) {
-    if ($i == "GeneID")
+    if ($i == "GENEID")
       g = $(i+1)
-    if ($i == "GenBank")
+    if ($i == "GENBANK")
       p = $(i+1)
   }
   map[g] = p
