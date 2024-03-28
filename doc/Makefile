@@ -1,6 +1,6 @@
 TEXT = auger
 SRC1 = $(TEXT).tex intro.tex
-SRC2 = cli.tex mewin.tex util.tex g2g.tex 
+SRC2 = cli.tex merwin.tex util.tex g2g.tex 
 
 date = $(shell git log | grep Date | head -n 1 | sed -r 's/Date: +[A-Z][a-z]+ ([A-Z][a-z]+) ([0-9]+) [^ ]+ ([0-9]+) .+/\2_\1_\3/')
 version = $(shell git describe)

@@ -25,7 +25,7 @@ doc/auger.toc
 doc/cli.tex
 doc/date.txt
 doc/g2g.tex
-doc/mewin.tex
+doc/merwin.tex
 doc/util.tex
 doc/version.txt
 
@@ -40,4 +40,4 @@ g2g/human.emapper.annotations
 g2g/protein*
 
 
-mewin/mewin
+merwin/merwin

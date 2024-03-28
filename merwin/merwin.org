@@ -1,6 +1,6 @@
 #+begin_export latex
 \section{Introduction}
-The program \ty{mewin} merges overlapping windows returned by
+The program \ty{merwin} merges overlapping windows returned by
 \ty{macle}. The output from \ty{macle} consists of three columns,
 sequence accession, midpoint of sliding window, and $\cm$. The
 midpoints are assumed to be in ascending order. For windows consisting
@@ -18,21 +18,21 @@ NC_000001.11    17000   0.0720
 NC_000001.11    18000   0.0736
 ...
 \end{verbatim}
-The program \ty{mewin} compares the $\cm$ value of the $i$-th window,
+The program \ty{merwin} compares the $\cm$ value of the $i$-th window,
 $\cm^i$ to a threshold, $t$. The program runs in two modes, maximizing
 and minimizing. In the default maximizing mode, overlapping windows
 with $\cm^i\ge t$ are merged. In minimizing mode, overlapping windows
 with $\cm^i\le t$ are merged.
 
-The output of \ty{mewin} consists of four columns, the accession, the
+The output of \ty{merwin} consists of four columns, the accession, the
 start and end positions of the interval, and the average $\cm$ value
 of the windows merged to form that interval.
 
 \section{Implementation}
-The program \ty{mewin} has hooks for imports, functions, and the logic
+The program \ty{merwin} has hooks for imports, functions, and the logic
 of the main function.
 #+end_export
-#+begin_src go <<mewin.go>>=
+#+begin_src go <<merwin.go>>=
   package main
 
   import (
@@ -50,7 +50,7 @@ usage, declare the options, parse the options, respond to the options,
 and parse the input files.
 #+end_export
 #+begin_src go <<Main function , Ch. \ref{ch:me}>>=
-  clio.PrepLog("mewin")
+  clio.PrepLog("merwin")
   //<<Set usage, Ch. \ref{ch:me}>>
   //<<Declare options, Ch. \ref{ch:me}>>
   //<<Parse options, Ch. \ref{ch:me}>>
@@ -65,12 +65,12 @@ We import \ty{clio}.
 #+end_src
 #+begin_export latex
 The usage consists of three parts, the actual usage message, an
-explanation of the purpose of \ty{mewin}, and an example command.
+explanation of the purpose of \ty{merwin}, and an example command.
 #+end_export
 #+begin_src go <<Set usage, Ch. \ref{ch:me}>>=
-  u := "mewin [option]... [file]..."
+  u := "merwin [option]... [file]..."
   p := "Merge overlapping windows returned by macle."
-  e := "mewin -t 0.9954 hs.cm"
+  e := "merwin -t 0.9954 hs.cm"
   clio.Usage(u, p, e)
 #+end_src
 #+begin_export latex
@@ -103,7 +103,7 @@ We respond to a version request, as this stops the program.
 #+end_export
 #+begin_src go <<Respond to options, Ch. \ref{ch:me}>>=
   if *optV {
-	  util.PrintInfo("mewin")
+	  util.PrintInfo("merwin")
   }
 #+end_src
 #+begin_export latex
@@ -297,12 +297,12 @@ open interval. If so, we print it.
   }
 #+end_src
 #+begin_export latex
-We have finished writing \ty{mewin}, time to test it.
+We have finished writing \ty{merwin}, time to test it.
 
 \section{Testing}
 Out testing program has hooks for imports and the testing logic.
 #+end_export
-#+begin_src go <<mewin_test.go>>=
+#+begin_src go <<merwin_test.go>>=
   package main
 
   import (
@@ -310,7 +310,7 @@ Out testing program has hooks for imports and the testing logic.
 	  //<<Testing imports, Ch. \ref{ch:me}>>
   )
 
-  func TestMewin(t *testing.T) {
+  func TestMerwin(t *testing.T) {
 	  //<<Testing, Ch. \ref{ch:me}>>
   }
 #+end_src
@@ -334,7 +334,7 @@ The first test uses only default parameters.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
   f := "../data/test.cm"
-  test := exec.Command("./mewin", f)
+  test := exec.Command("./merwin", f)
   tests = append(tests, test)
 #+end_src
 #+begin_export latex
@@ -348,7 +348,7 @@ For the second test we change the threshold from default 0.99 to
 0.9954.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
-  test = exec.Command("./mewin",  "-t",  "0.9954", f)
+  test = exec.Command("./merwin",  "-t",  "0.9954", f)
   tests = append(tests, test)
 #+end_src
 #+begin_export latex
@@ -356,7 +356,7 @@ For the third test we also change the window length from default 10 kb
 to 50 kb.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
-  test = exec.Command("./mewin", "-t", "0.9954",
+  test = exec.Command("./merwin", "-t", "0.9954",
 	  "-w", "50000", f)
   tests = append(tests, test)
 #+end_src
@@ -364,7 +364,7 @@ to 50 kb.
 In the fourth and last test we work in minimizing mode.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
-  test = exec.Command("./mewin", "-t", "0.49", "-i", f)
+  test = exec.Command("./merwin", "-t", "0.49", "-i", f)
   tests = append(tests, test)
 #+end_src
 #+begin_export latex

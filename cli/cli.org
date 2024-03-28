@@ -71,12 +71,12 @@ which gives us $t=0.9954$.
   macle2go quantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
 #+end_src
 #+begin_export latex
-We use the program \ty{mewin}, which is also part of this package, to
+We use the program \ty{merwin}, which is also part of this package, to
 merge the windows where $\cm\ge t$ and store the resulting 1243
 intervals in the file \ty{hs\_iv.txt}.
 #+end_export
 #+begin_src sh <<cli>>=
-  mewin -w 10000 -t 0.9954 hs.cm > hs_iv.txt
+  merwin -w 10000 -t 0.9954 hs.cm > hs_iv.txt
 #+end_src
 #+begin_export latex
 Next, we annotate the unique regions just found.

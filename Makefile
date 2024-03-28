@@ -1,5 +1,5 @@
-dirs = cli g2g mewin util
-all: util/util.go build/cli.sh build/g2g.sh build/mewin build/pick.awk build/print.awk
+dirs = cli g2g merwin util
+all: util/util.go build/cli.sh build/g2g.sh build/merwin build/pick.awk build/print.awk
 
 
 util/util.go: util/util.org
@@ -11,9 +11,9 @@ build/cli.sh: cli/cli.org
 build/g2g.sh: g2g/g2g.org
 	make -C g2g
 	cp g2g/g2g.sh build
-build/mewin: mewin/mewin.org
-	make -C mewin
-	cp mewin/mewin build
+build/merwin: merwin/merwin.org
+	make -C merwin
+	cp merwin/merwin build
 build/pick.awk: g2g/g2g.org
 	make -C g2g
 	cp g2g/pick.awk build
