@@ -19,10 +19,10 @@ NC_000001.11    18000   0.0736
 ...
 \end{verbatim}
 The program \ty{merwin} compares the $\cm$ value of the $i$-th window,
-$\cm^i$ to a threshold, $t$. The program runs in two modes, maximizing
-and minimizing. In the default maximizing mode, overlapping windows
-with $\cm^i\ge t$ are merged. In minimizing mode, overlapping windows
-with $\cm^i\le t$ are merged.
+$\cm^i$, to a threshold, $t$. The program runs in two modes,
+maximizing and minimizing. In the default maximizing mode, overlapping
+windows with $\cm^i\ge t$ are merged. In minimizing mode, overlapping
+windows with $\cm^i\le t$ are merged.
 
 The output of \ty{merwin} consists of four columns, the accession, the
 start and end positions of the interval, and the average $\cm$ value
@@ -65,10 +65,12 @@ We import \ty{clio}.
 #+end_src
 #+begin_export latex
 The usage consists of three parts, the actual usage message, an
-explanation of the purpose of \ty{merwin}, and an example command.
+explanation of the purpose of \ty{merwin}, and an example command. We
+make the $\cm$ threshold a mandatory option as it is too easy to
+accept a default, when this will almost certainly be wrong.
 #+end_export
 #+begin_src go <<Set usage, Ch. \ref{ch:me}>>=
-  u := "merwin [option]... [file]..."
+  u := "merwin -t <threshold> [option]... [file]..."
   p := "Merge overlapping windows returned by macle."
   e := "merwin -t 0.9954 hs.cm"
   clio.Usage(u, p, e)
@@ -81,7 +83,7 @@ maximizing.
 #+begin_src go <<Declare options, Ch. \ref{ch:me}>>=
   optV := flag.Bool("v", false, "version")
   optW := flag.Int("w", 10000, "window length")
-  optT := flag.Float64("t", 0.99, "C_m threshold")
+  optT := flag.Float64("t", 0.0, "C_m threshold")
   m := "minimizing, i. e. merge if C_m <= t " +
 	  "(default maximizing)"
   optI := flag.Bool("i", false, m)
@@ -113,10 +115,29 @@ We import \ty{util}.
   "github.com/evolbioinf/auger/util"
 #+end_src
 #+begin_export latex
+We also check the user has supplied a $\cm$ threhold. If not, we refer
+the user to the \ty{quantile} program of \ty{macle2go}.
+#+end_export
+#+begin_src go <<Respond to options, Ch. \ref{ch:me}>>=
+  if *optT == 0.0 {
+	  m := "please supply a C_m threshold; this "
+	  m += "can be calculated with the quantile "
+	  m += "subprogram of macle2go available "
+	  m += "from github.com/evolbioinf/macle2go"
+	  log.Fatal(m)
+  }
+#+end_src
+#+begin_export latex
+We import \ty{log}.
+#+end_export
+#+begin_src go <<Imports, Ch. \ref{ch:me}>>=
+  "log"
+#+end_src
+#+begin_export latex
 The remaining tokens on the command line are interpreted as the names
 of files. These are parsed using the function \ty{ParseFiles}, which
 applies the function \ty{parse} to each one of them. The function
-\ty{parse} in turn takes as arguments the window length, the
+\ty{parse} in turn takes as arguments the window length, the $\cm$
 threshold, and whether or not we are in minimizing mode.
 #+end_export
 #+begin_src go <<Parse input files, Ch. \ref{ch:me}>>=
@@ -177,14 +198,15 @@ quantities,
   prevSeq := ""
 #+end_src
 #+begin_export latex
-To analyze the current window, we split it into fields and retrieve
-the name of the current sequence. Then we retrieve the other two
-values that make up the interval, the midpoint and the $\cm$. Based on
-the current window, we have three decisions to take: whether or not to
-output the current interval, if it exists, whether or not the current
-window is a merge candidate, and whether or not to actually merge the
-window. After that, we prepare the analysis of the next window by
-setting the previous sequence accession.
+To analyze the current window, we split it into its three
+fields---name, midpoint, and $\cm$---and retrieve the name of the
+current sequence. Then we retrieve the other two values that make up
+the interval, the midpoint and the $\cm$. Based on the current window,
+we have three decisions to take: whether or not to output the current
+interval, if it exists, whether or not the current window is a merge
+candidate, and whether or not to actually merge the window. After
+that, we prepare the analysis of the next window by setting the
+previous sequence accession to the current accession.
 #+end_export
 #+begin_src go <<Analyze window, Ch. \ref{ch:me}>>=
   fields := strings.Fields(sc.Text())
@@ -203,7 +225,8 @@ We import \ty{strings}.
 #+end_src
 #+begin_export latex
 We retrieve the midpoint and $\cm$. From the midpoint we calculate the
-window start and end. If $\cm < 0$, we skip the rest of the analysis.
+window start and end. If $\cm < 0$, there is no date for this window
+and we skip the rest of the analysis.
 #+end_export
 #+begin_src go <<Retrieve midpoint and $\cm$, Ch. \ref{ch:me}>>=
   mi, err := strconv.ParseFloat(fields[1], 64)
@@ -248,9 +271,9 @@ We import \ty{fmt}.
   "fmt"
 #+end_src
 #+begin_export latex
-Whether or not the current window is a merge candidate depends on the
-program's mode. In default maximizing mode, $\cm\ge t$ makes the window
-a candidate, otherwise it's $\cm\le t$.
+Whether or not the current window is a merge candidate, depends on the
+program's mode. In default maximizing mode, $\cm\ge t$ makes the
+window a candidate, otherwise $\cm\le t$ does that.
 #+end_export
 #+begin_src go <<Is window a merge candidate? Ch. \ref{ch:me}>>=
   isCand := false
@@ -265,12 +288,13 @@ a candidate, otherwise it's $\cm\le t$.
   }
 #+end_src
 #+begin_export latex
-If the window is a candidate, its end becomes the end of the current
-interval. If no interval is open at this moment, the window start also
-becomes the start of a new interval. In addition, the sum of $\cm$ is
-incremented, as is the window count. If the window start is greater
-than the interval end, a new interval is created that starts at the
-window start. Otherwise the interval is effectively merged.
+If the window is a merge candidate, its end becomes the end of the
+current interval. If no interval is open at this moment, the window
+start also becomes the start of a new interval. In addition, the sum
+of $\cm$ is incremented, as is the window count. If the window start
+is greater than the interval end, a new interval is created that
+starts at the window start. Otherwise the interval is effectively
+merged.
 #+end_export
 #+begin_src go <<Merge window? Ch. \ref{ch:me}>>=
   if isCand {
@@ -297,7 +321,7 @@ open interval. If so, we print it.
   }
 #+end_src
 #+begin_export latex
-We have finished writing \ty{merwin}, time to test it.
+We have finished writing \ty{merwin}, it's time to test it.
 
 \section{Testing}
 Out testing program has hooks for imports and the testing logic.
@@ -330,11 +354,11 @@ in
 \begin{verbatim}
 ../data/test.cm
 \end{verbatim}
-The first test uses only default parameters.
+The first test uses default parameters and $t=0.99$.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
   f := "../data/test.cm"
-  test := exec.Command("./merwin", f)
+  test := exec.Command("./merwin", "-t", "0.99", f)
   tests = append(tests, test)
 #+end_src
 #+begin_export latex
@@ -344,8 +368,7 @@ We import \ty{exec}.
   "os/exec"
 #+end_src
 #+begin_export latex
-For the second test we change the threshold from default 0.99 to
-0.9954.
+For the second test we change $t$ from 0.99 to 0.9954.
 #+end_export
 #+begin_src go <<Construct tests, Ch. \ref{ch:me}>>=
   test = exec.Command("./merwin",  "-t",  "0.9954", f)
