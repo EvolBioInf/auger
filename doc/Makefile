@@ -15,6 +15,9 @@ $(TEXT).pdf: $(TEXT).tex $(SRC1) $(SRC2)
 	latex $(TEXT).tex
 	dvips $(TEXT) -o -q
 	ps2pdf -dALLOWPSTRANSPARENCY $(TEXT).ps
+	if [ -d /mnt/c/Users/haubold/ownCloud\ -\ haubold@evolbio.mpg.de@owncloud.gwdg.de/docs/ ]; then \
+		cp auger.pdf /mnt/c/Users/haubold/ownCloud\ -\ haubold@evolbio.mpg.de@owncloud.gwdg.de/docs/; \
+	fi
 %.tex: ../*/%.org $(TEXT).tex
 	bash ../scripts/org2nw $< | awk -f ../scripts/preWeave.awk | noweave -n -x | sed 's/_test/\\_test/' > $@
 clean:
