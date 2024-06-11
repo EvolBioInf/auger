@@ -33,9 +33,13 @@ g2g/*.awk
 g2g/*.gene2go
 g2g/*.sh
 g2g/*.txt
+g2g/check*.out
 g2g/gene2go
 g2g/genomic.gff
 g2g/gff*
+g2g/go-basic.obo
+g2g/hs.g2g
+g2g/hs.gff
 g2g/human.emapper.annotations
 g2g/protein*
 

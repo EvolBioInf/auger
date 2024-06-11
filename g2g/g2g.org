@@ -21,8 +21,8 @@ insignificant columns are denoted by dots.
   }
 \end{center}
 \end{table}
-Such a file is constructed from three maps, genes to proteins,
-proteins go GO IDs, and GO IDs to GO terms. In the following we
+A gene2go file is constructed from three maps, genes to proteins,
+proteins to GO IDs, and GO IDs to GO terms. In the following we
 construct each of these maps for the human genome in turn before we
 join them to construct the final gene2go file.
 \section{Map Genes to Proteins}
@@ -165,32 +165,131 @@ GO terms give biological meaning to GO IDs, for example the GO ID
 GO:0001501 refers to the term ``skeletal system development''. Apart
 from its term, a GO ID is also mapped to a category, which we would
 like to include in our map. Our example GO ID refers to the category
-``Process''. GO IDs, terms, and categories are supplied in the file
-\ty{gene2go}, which we download.
+``Process''. A current list of GO IDs, terms, and categories are
+distributed by the GO Consortium via their website
+\ty{geneontology.org}. We download this list via the URL supplied by
+the GO Consortium.
 #+end_export
 #+begin_src sh <<g2g>>=
-  wget ftp.ncbi.nih.gov/gene/DATA/gene2go.gz
+  wget http://purl.obolibrary.org/obo/go/go-basic.obo
 #+end_src
 #+begin_export latex
-We unzip the file and count its entries, 94,023,495 in our case.
+We are interested in GO Terms, which start with
+\begin{verbatim}
+[Term]
+\end{verbatim}
+and end with an empty line. We extract the first one.
 #+end_export
 #+begin_src sh <<g2g>>=
-  gunzip gene2go.gz
-  wc -l gene2go
+  awk '/^\[Term\]/{o=1}/^$/{o=0}o{print}' \
+      go-basic.obo | head
 #+end_src
 #+begin_export latex
-We suspect that the file \ty{gene2go} contains some redundancy and
-hence convert it into a non-redundant map between GO IDs, terms, and
-categories.
+\begin{verbatim}
+[Term]
+id: GO:0000001
+name: mitochondrion inheritance
+namespace: biological_process
+def: "The distribution of mitochondria,...
+synonym: "mitochondrial inheritance" EXACT []
+is_a: GO:0048308 ! organelle inheritance
+is_a: GO:0048311 ! mitochondrion distribution
+[Term]
+id: GO:0000002
+\end{verbatim}
+#+end_export
+#+begin_export latex
+At the time of writing there were 47,825 terms.
 #+end_export
 #+begin_src sh <<g2g>>=
-  grep -v '^#' gene2go |
-      cut -f 3,6,8 |
-      awk '{if(!id[$1]){print;id[$1]=1}}' > go2term.txt
+  grep -c '^id: GO' go-basic.obo
 #+end_src
 #+begin_export latex
-Our suspicion was correct, the file \ty{go2term.txt} only contains
-27,196 entries, down from 94 million.
+For each term we wish to extract the values of the three keys id,
+name, and namespace. This would be simplified if we could rely on the
+order of keys we observe in the first term. So we print the three keys
+in a row by calling \ty{printKeys.awk} and count the number of
+distinct rows. We find that there's only one, as hoped.
+#+end_export
+#+begin_src sh <<g2g>>=
+  awk -f printKeys.awk go-basic.obo |
+      sort |
+      uniq
+#+end_src
+#+begin_export latex
+In the program \ty{printKeys.awk} we print ensure we're inside a term
+and print the keys.
+\bpr{printKeys.awk}{pr:pk}
+#+end_export
+#+begin_src awk <<printKeys.awk>>=
+  ##<<Ensure we're inside a term, Pr. \ref{pr:pk}>>
+  ##<<Print keys, Pr. \ref{pr:pk}>>
+#+end_src
+#+begin_export latex
+\epr A term starts with \verb+[Term]+. If we find this header, we
+switch on the indicator variable \ty{term}, otherwise we switch it
+off.
+#+end_export
+#+begin_src awk <<Ensure we're inside a term, Pr. \ref{pr:pk}>>=
+  /^\[/ {
+    if (/\[Term\]/)
+      term = 1
+    else
+      term = 0
+  }
+#+end_src
+#+begin_export latex
+If we're inside a term, we parse for id, name, and namespace. The
+first two we print without newline, the third with.
+#+end_export
+#+begin_src awk <<Print keys, Pr. \ref{pr:pk}>>=
+  term && /^id:/ {
+    printf "id"
+  }
+  term && /^name:/ {
+    printf "name"
+  }
+  term && /^namespace: / {
+    printf "namespace\n"
+  }
+#+end_src
+#+begin_export latex
+Given that we can rely on the order of keys, we print their values to
+the file \ty{go2term.txt} by calling \ty{printVal.awk}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  awk -f printVal.awk go-basic.obo > go2term.txt
+#+end_src
+#+begin_export latex
+The program \ty{printVal.awk} is structured like \ty{printKeys.awk}
+and we print the columns of values separated by
+tabs.\bpr{printVal.awk}{pr:pv}
+#+end_export
+#+begin_src awk <<printVal.awk>>=
+  ##<<Ensure we're inside a term, Pr. \ref{pr:pk}>>
+  ##<<Print Values, Pr. \ref{pr:pv}>>
+#+end_src
+#+begin_export latex
+\epr The ``id'' and the ``namespace'' each have a single string as
+value. However, the ``name'' usually consists of more than one string,
+so we iterate over them.
+#+end_export
+#+begin_src awk <<Print Values, Pr. \ref{pr:pv}>>=
+  term && /^id:/ {
+    printf "%s", $2
+  }
+  term && /^name:/ {
+    printf "\t%s", $2
+    for (i = 3; i <= NF; i++)
+      printf " %s", $i
+  }
+  term && /^namespace: / {
+    printf "\t%s\n", $2
+  }
+#+end_src
+#+begin_export latex
+We count the number of rows in \ty{go2term.txt}, to find the expected
+47,825.
 #+end_export
 #+begin_src sh <<g2g>>=
   wc -l go2term.txt
