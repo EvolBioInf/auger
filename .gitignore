@@ -1,5 +1,3 @@
-*/*.go
-
 build
 
 cli/genome*
@@ -29,11 +27,13 @@ doc/merwin.tex
 doc/util.tex
 doc/version.txt
 
-g2g/*.awk
 g2g/*.gene2go
 g2g/*.sh
 g2g/*.txt
+g2g/check*.sh
 g2g/check*.out
+g2g/eggnog.sh
+g2g/emapper.sh
 g2g/gene2go
 g2g/genomic.gff
 g2g/gff*
