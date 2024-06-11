@@ -1,7 +1,6 @@
 build
 
 cli/genome*
-cli/cli.sh
 cli/gff*
 cli/hsEnr.txt
 cli/hsGoSym.txt
@@ -28,7 +27,6 @@ doc/util.tex
 doc/version.txt
 
 g2g/*.gene2go
-g2g/*.sh
 g2g/*.txt
 g2g/check*.sh
 g2g/check*.out
