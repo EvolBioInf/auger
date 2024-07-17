@@ -1,2 +1,4 @@
 github.com/evolbioinf/clio v0.0.0-20230620105705-02d07225d27e h1:csibfpCOoKLYtIsw2czC46Vz+I3vMc6TSc4IraeKGH8=
 github.com/evolbioinf/clio v0.0.0-20230620105705-02d07225d27e/go.mod h1:Jh4QPiChVHZHe7fwj+xcSs6kUcQbQVzsd/ht3PIoaaU=
+github.com/evolbioinf/sus v0.0.0-20230320163303-b6d16dd4ec1f h1:yd1T1dpX1RU9ehKYra/Sg/2TD+1dYMm2roFrapPEO4o=
+github.com/evolbioinf/sus v0.0.0-20230320163303-b6d16dd4ec1f/go.mod h1:SaiLF93OldWIG3wdOZ+aZSNoklGESyYLi5yGQRXONLs=

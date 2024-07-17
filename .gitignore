@@ -22,6 +22,7 @@ doc/auger.toc
 doc/cli.tex
 doc/date.txt
 doc/g2g.tex
+doc/mantile.tex
 doc/merwin.tex
 doc/util.tex
 doc/version.txt
@@ -41,5 +42,8 @@ g2g/hs.gff
 g2g/human.emapper.annotations
 g2g/protein*
 
+mantile/*.dat
+mantile/makeRes.sh
+mantile/mantile
 
 merwin/merwin

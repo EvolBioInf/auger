@@ -1,12 +1,12 @@
 TEXT = auger
-SRC1 = $(TEXT).tex intro.tex
-SRC2 = cli.tex merwin.tex util.tex g2g.tex 
+SRC1 = $(TEXT).tex intro.tex ref.bib
+SRC2 = cli.tex mantile.tex merwin.tex util.tex g2g.tex 
 
 date = $(shell git log | grep Date | head -n 1 | sed -r 's/Date: +[A-Z][a-z]+ ([A-Z][a-z]+) ([0-9]+) [^ ]+ ([0-9]+) .+/\2_\1_\3/')
 version = $(shell git describe)
 
 all: $(TEXT).pdf
-$(TEXT).pdf: $(TEXT).tex $(SRC1) $(SRC2)
+$(TEXT).pdf: $(TEXT).tex $(SRC1) $(SRC2) ../mantile/man.ps
 	echo $(date) | tr '_' ' ' > date.txt
 	echo $(version) | tr '-' ' ' | awk '{printf "%s", $$1; if ($$2) printf "-%s", $$2; printf "\n"}' > version.txt
 	latex $(TEXT).tex
@@ -15,6 +15,7 @@ $(TEXT).pdf: $(TEXT).tex $(SRC1) $(SRC2)
 	latex $(TEXT).tex
 	dvips $(TEXT) -o -q
 	ps2pdf -dALLOWPSTRANSPARENCY $(TEXT).ps
+publish: $(TEXT).pdf
 	if [ -d /mnt/c/Users/haubold/ownCloud\ -\ haubold@evolbio.mpg.de@owncloud.gwdg.de/docs/ ]; then \
 		cp auger.pdf /mnt/c/Users/haubold/ownCloud\ -\ haubold@evolbio.mpg.de@owncloud.gwdg.de/docs/; \
 	fi

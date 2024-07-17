@@ -64,11 +64,11 @@ len:    3088286401
 gc:     0.4087
 ...
 \end{verbatim}
-The threshold itself is calculated with the program \ty{macle2go},
-which gives us $t=0.9954$.
+The threshold itself is calculated with the program \ty{mantile},
+which is also part of this package. This gives us $t=0.9954$.
 #+end_export
 #+begin_src sh <<cli>>=
-  macle2go quantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
+  mantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
 #+end_src
 #+begin_export latex
 We use the program \ty{merwin}, which is also part of this package, to
