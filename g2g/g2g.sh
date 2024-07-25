@@ -36,16 +36,20 @@ grep -v '^#' human.emapper.annotations |
 wget http://purl.obolibrary.org/obo/go/go-basic.obo
 awk '/^\[Term\]/{o=1}/^$/{o=0}o{print}' \
     go-basic.obo | head
-grep -c '^id:' go-basic.obo
+grep -c '^id: GO' go-basic.obo
 awk -f printKeys.awk go-basic.obo |
     sort |
     uniq
 awk -f printVal.awk go-basic.obo > go2term.txt
+wc -l go2term.txt
+awk '$2 ~ /^obsolete/' go2term.txt | wc -l
+awk '$2 !~ /^obsolete/' go2term.txt > t
+mv t go2term.txt
 sort -k 2,2 gen2pro.txt > t; mv t gen2pro.txt
-sort -k 1,1 pro2go.txt > t; mv t pro2go.txt
+sort -k 1,1 pro2go.txt  > t; mv t pro2go.txt
 join -1 2 gen2pro.txt pro2go.txt |
     awk '{printf "%s\t%s\n", $2, $3}' > gen2go.txt
-sort -k 2,2 gen2go.txt > t; mv t gen2go.txt
+sort -k 2,2 gen2go.txt  > t; mv t gen2go.txt
 sort -k 1,1 go2term.txt > t; mv t go2term.txt
 join -t '      ' -1 2 gen2go.txt go2term.txt |
     awk -F '\t' -f print.awk  > hs.g2g

@@ -83,7 +83,7 @@ func main() {
 	optW := flag.Int("w", 10000, "window length")
 	optT := flag.Float64("t", 0.0, "C_m threshold")
 	m := "minimizing, i. e. merge if C_m <= t " +
-		"(default maximizing)"
+		"(default maximizing, i. e. merge if C_m >= t)"
 	optI := flag.Bool("i", false, m)
 	flag.Parse()
 	if *optV {
@@ -91,9 +91,7 @@ func main() {
 	}
 	if *optT == 0.0 {
 		m := "please supply a C_m threshold; this "
-		m += "can be calculated with the quantile "
-		m += "subprogram of macle2go available "
-		m += "from github.com/evolbioinf/macle2go"
+		m += "can be calculated with the program mantile "
 		log.Fatal(m)
 	}
 	files := flag.Args()

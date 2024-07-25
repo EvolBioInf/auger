@@ -1,7 +1,7 @@
 #+begin_export latex
 \section{Pick Unique Regions}
 To pick unique regions from a genome, we need its raw DNA sequence. We
-download this in ``dehydrated'' form using the program
+download the human genome in ``dehydrated'' form using the program
 \ty{datasets}\footnote{\ty{ncbi.nlm.nih.gov/datasets}}.
 #+end_export
 #+begin_src sh <<cli>>=
@@ -22,19 +22,18 @@ before they can be used.
   datasets rehydrate --directory genome
 #+end_src
 #+begin_export latex
-To calculate the \ty{macle} index of the genome sequence, we store the
-path of the sequence in a convenient variable. Then we extract the
-reference part of the genome using the program
-\ty{getSeq}\footnote{\ty{github.com/evolbioinf/biobox}} and save it to
-\ty{hs.fasta}. We index \ty{hs.fasta} using \ty{macle} and save the
-index to \ty{hs.idx}. This takes approximately an hour and 200 GB of
-RAM.
+We detect unique regions with the program
+\ty{macle}\footnote{\ty{github.com/evolbioinf/macle}}. It works best
+on an index of the input sequence. To calculate the \ty{macle} index
+of the genome sequence, we store the path of the sequence in a
+convenient variable. Then we index the human genome using \ty{macle}
+and save the index to \ty{hs.idx}. This takes approximately an hour
+and 200 GB of RAM.
 #+end_export
 #+begin_src sh <<cli>>=
   p="genome/ncbi_dataset/data/GCF_000001405.40"
   p="$p/GCF_000001405.40_GRCh38.p14_genomic.fna"
-  getSeq NC_ $p > hs.fasta
-  macle -s hs.fasta > hs.idx
+  macle -s $p > hs.idx
 #+end_src
 #+begin_export latex
 As an alternative to calculating the index, it can be downloaded from
@@ -71,9 +70,9 @@ which is also part of this package. This gives us $t=0.9954$.
   mantile -l 3088286401 -g 0.4087 -w 10000 -p 0.05
 #+end_src
 #+begin_export latex
-We use the program \ty{merwin}, which is also part of this package, to
-merge the windows where $\cm\ge t$ and store the resulting 1243
-intervals in the file \ty{hs\_iv.txt}.
+We use the program \ty{merwin}, also from this package, to merge the
+windows where $\cm\ge t$ and store the resulting 1243 intervals in the
+file \ty{hs\_iv.txt}.
 #+end_export
 #+begin_src sh <<cli>>=
   merwin -w 10000 -t 0.9954 hs.cm > hs_iv.txt
@@ -85,10 +84,11 @@ Next, we annotate the unique regions just found.
 We annotate our unique regions using the program \ty{annotate} from
 the \ty{gin} repo\footnote{\ty{github.com/evolbioinf/gin}}. It takes
 as input the list of unique regions just generated and the GFF file
-for the human genome, and returns the gene identifiers of the genes
-whose promoters intersect the unique regions. By default, a promoter
-is a 4 kb interval centered on a transcription start site. We begin by
-downloading the GFF file using datasets.
+for the human genome, and returns the identifiers of the genes whose
+promoters intersect the unique regions. By default, a promoter is a 2
+kb interval upstream of a transcription start site. We begin by
+downloading the annotations as a GFF file using \ty{datasets}. Then we
+save the annotations to a convenient name, \ty{hs.gff}.
 #+end_export
 #+begin_src sh <<cli>>=
   datasets download genome accession GCF_000001405.40 \
@@ -144,7 +144,7 @@ genome enriched for certain biological functions?
 #+end_export
 #+begin_export latex
 \section{Enrichment Analysis}
-We use Monte Carlo simulation to assess the functional enrichment. For
+We use Monte Carlo simulation to test for functional enrichment. For
 this we shuffle the observed 1243 intervals across the genome and
 annotate them again. The frequency with which we observe an occupancy
 at least as large as that in the unshuffled data is our desired

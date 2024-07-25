@@ -1,10 +1,10 @@
 #+begin_export latex
 \section{Introduction}
-As described in Chapter~\ref{ch:cli}, gene2go files are used by
-\ty{ego} to calculate the enrichment of GO terms.  Table~\ref{tab:g2g}
-shows an example of such a gene2go table. It has eight columns, of
-which four are significant, gene ID, GO ID, GO term, and category. The
-insignificant columns are denoted by dots.
+As described in Chapter~\ref{ch:cli}, gene2go files are used as input
+by \ty{ego} to calculate the enrichment of GO terms.
+Table~\ref{tab:g2g} shows an example of such a gene2go table. It has
+eight columns, of which four are significant, gene ID, GO ID, GO term,
+and category. The insignificant columns are denoted by dots.
 \begin{table}
   \caption{Example gene2go table.}\label{tab:g2g}
   \begin{center}
@@ -26,15 +26,16 @@ proteins to GO IDs, and GO IDs to GO terms. In the following we
 construct each of these maps for the human genome in turn before we
 join them to construct the final gene2go file.
 \section{Map Genes to Proteins}
-To map genes to protein, we need the human GFF file, which we download
-using \ty{datasets}.
+To map genes to proteins, we need the human annotation file in GFF
+format, which we download using \ty{datasets}.
 #+end_export
 #+begin_src sh <<g2g>>=
   datasets download genome accession GCF_000001405.40 \
 	   --include gff3 --filename gff3.zip
 #+end_src
 #+begin_export latex
-We unzip the downloaded data and move it to a convenient location.
+We unzip the downloaded annotations and move them to a convenient
+location.
 #+end_export
 #+begin_src sh <<g2g>>=
   unzip -d gff3 gff3.zip
@@ -103,8 +104,7 @@ begin by downloading the human proteome, again using our friend
 	   --include protein --filename protein.zip
 #+end_src
 #+begin_export latex
-We unzip the downloaded file and move the proteome to a convenient
-place.
+We unzip the proteome and move it to a convenient place.
 #+end_export
 #+begin_src sh <<g2g>>=
   unzip -d protein protein.zip
@@ -165,7 +165,7 @@ GO terms give biological meaning to GO IDs, for example the GO ID
 GO:0001501 refers to the term ``skeletal system development''. Apart
 from its term, a GO ID is also mapped to a category, which we would
 like to include in our map. Our example GO ID refers to the category
-``Process''. A current list of GO IDs, terms, and categories are
+``Process''. A current list of GO IDs, terms, and categories is
 distributed by the GO Consortium via their website
 \ty{geneontology.org}. We download this list via the URL supplied by
 the GO Consortium.
@@ -209,7 +209,7 @@ For each term we wish to extract the values of the three keys id,
 name, and namespace. This would be simplified if we could rely on the
 order of keys we observe in the first term. So we print the three keys
 in a row by calling \ty{printKeys.awk} and count the number of
-distinct rows. We find that there's only one, as hoped.
+distinct rows. We find that there's only one, as we had hoped.
 #+end_export
 #+begin_src sh <<g2g>>=
   awk -f printKeys.awk go-basic.obo |
@@ -217,9 +217,8 @@ distinct rows. We find that there's only one, as hoped.
       uniq
 #+end_src
 #+begin_export latex
-In the program \ty{printKeys.awk} we print ensure we're inside a term
-and print the keys.
-\bpr{printKeys.awk}{pr:pk}
+In the program \ty{printKeys.awk} we first ensure we're inside a term,
+then print the keys.  \bpr{printKeys.awk}{pr:pk}
 #+end_export
 #+begin_src awk <<printKeys.awk>>=
   ##<<Ensure we're inside a term, Pr. \ref{pr:pk}>>
@@ -261,18 +260,19 @@ the file \ty{go2term.txt} by calling \ty{printVal.awk}.
   awk -f printVal.awk go-basic.obo > go2term.txt
 #+end_src
 #+begin_export latex
-The program \ty{printVal.awk} is structured like \ty{printKeys.awk}
-and we print the columns of values separated by
-tabs.\bpr{printVal.awk}{pr:pv}
+The program \ty{printVal.awk} is structured like
+\ty{printKeys.awk}. We first ensure we're inside a term, then we print
+the values.\bpr{printVal.awk}{pr:pv}
 #+end_export
 #+begin_src awk <<printVal.awk>>=
   ##<<Ensure we're inside a term, Pr. \ref{pr:pk}>>
   ##<<Print Values, Pr. \ref{pr:pv}>>
 #+end_src
 #+begin_export latex
-\epr The ``id'' and the ``namespace'' each have a single string as
-value. However, the ``name'' usually consists of more than one string,
-so we iterate over them.
+\epr We print the columns of values separated by tabs. The ``id'' and
+the ``namespace'' each have a single string as value. However, the
+``name'' usually consists of more than one string, so we iterate over
+them and print them separated by blanks.
 #+end_export
 #+begin_src awk <<Print Values, Pr. \ref{pr:pv}>>=
   term && /^id:/ {
@@ -295,6 +295,20 @@ We count the number of rows in \ty{go2term.txt}, to find the expected
   wc -l go2term.txt
 #+end_src
 #+begin_export latex
+Out of the 47,825 terms, 5570 are marked as ``obsolete''.
+#+end_export
+#+begin_src sh <<g2g>>=
+  awk '$2 ~ /^obsolete/' go2term.txt | wc -l
+#+end_src
+#+begin_export latex
+We remove the obsolete terms to get our final version of
+\ty{go2term.txt}.
+#+end_export
+#+begin_src sh <<g2g>>=
+  awk '$2 !~ /^obsolete/' go2term.txt > t
+  mv t go2term.txt
+#+end_src
+#+begin_export latex
 \section{Join Tables}
 We now have three tables in hand
 \begin{enumerate}
@@ -302,14 +316,14 @@ We now have three tables in hand
 \item \ty{pro2go.txt}: protein IDs mapped to GO IDs
 \item \ty{go2term.txt}: go IDs mapped to GO terms (and categories)
 \end{enumerate}
-Our aim is to construct the table shown in Table~\ref{tab:g2g}.
-To get this, we begin by joining \ty{gen2pro.txt} and \ty{pro2go.txt}
-on the protein ID. For this, we sort \ty{gen2pro.txt} and \ty{pro2go}
-on the protein ID.
+Our aim is to construct the table shown in Table~\ref{tab:g2g}.  We
+begin by joining \ty{gen2pro.txt} and \ty{pro2go.txt} on the protein
+ID. For this, we sort \ty{gen2pro.txt} and \ty{pro2go} on the protein
+ID.
 #+end_export
 #+begin_src sh <<g2g>>=
   sort -k 2,2 gen2pro.txt > t; mv t gen2pro.txt
-  sort -k 1,1 pro2go.txt > t; mv t pro2go.txt
+  sort -k 1,1 pro2go.txt  > t; mv t pro2go.txt
 #+end_src
 #+begin_export latex
 Now we join these tables, extract the gene IDs and GO terms, and save
@@ -324,15 +338,16 @@ Next, we join \ty{gen2go.txt} with \ty{go2term.txt} on the GO ID. So
 we sort both files on that column.
 #+end_export
 #+begin_src sh <<g2g>>=
-  sort -k 2,2 gen2go.txt > t; mv t gen2go.txt
+  sort -k 2,2 gen2go.txt  > t; mv t gen2go.txt
   sort -k 1,1 go2term.txt > t; mv t go2term.txt
 #+end_src
 #+begin_export latex
-Now we join these two tables and generate the desired gene2go table by
-calling the script \ty{print.awk}, which we still need to write. Note
-that here \ty{join} takes as delimiter (\ty{-t}) the TAB character,
-which is entered in single quotes by pressing C-v TAB. We save the
-final table in the file \ty{hs.g2g}.
+Now we join \ty{gene2go.txt} and \ty{go2term.txt} and extract from
+this the desired gene2go table by calling the script \ty{print.awk},
+which we still need to write. Note that here \ty{join} takes as
+delimiter (\ty{-t}) the TAB character, which is entered in single
+quotes by pressing C-v TAB. We save the final table in the file
+\ty{hs.g2g}.
 #+end_export
 #+begin_src sh <<g2g>>=
   join -t '      ' -1 2 gen2go.txt go2term.txt |

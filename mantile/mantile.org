@@ -3,13 +3,13 @@
 As described in Chapter~\ref{ch:cli}, a typical use of the program
 \ty{macle} is to run a sliding window analysis of the match
 complexity, $\cm$, on a given genome. The results of such an analysis
-need to be compared to the null distribution of $\cm$ in order to
+need are compared to the null distribution of $\cm$ in order to
 determine threshold values for, say, random regions. The program
-\ty{mantile}, for ``match quantile'' implements this computation. It
-takes as input the sequence length, GC content, window length, and
-probability, and returns the $\cm$ quantile for that probability. The
-tutorial in Section~\ref{sec:manTut} shows how to compare the results
-of \ty{mantile} to simulated values of $\cm$.
+\ty{mantile}, for ``match quantile'' implements this threshold
+computation. It takes as input the sequence length, GC content, window
+length, and probability, and returns the $\cm$ quantile for that
+probability. The tutorial in Section~\ref{sec:manTut} shows how to
+compare the results of \ty{mantile} to simulated values of $\cm$.
 
 \section{Implementation}
 The outline of \ty{mantile} contains hooks for imports and the logic
@@ -145,14 +145,14 @@ We import \ty{math}.
 Following the derivation in~\cite{hau09:est}, let $P(X^\ast_i= x)$ be
 the probability that the length of the shortest unique substring
 starting at some position $i$ of a string of length $\ell$ is equal to
-$x$. This quantity is implemented as the Function \ty{Prob} in the
-package
+$x$. The computation of this quantity is implemented as the function
+\ty{Prob} in the package
 \begin{verbatim}
 github.com/evolbioinf/sus
 \end{verbatim}
 
-To simplify matters, we consider here the longest match starting at
-$i$, $Y^\ast_i=X^\ast_i-1$. Its mean is
+To simplify matters, we consider here the longest \emph{match}
+starting at $i$, $Y^\ast_i=X^\ast_i-1$. Its mean is
 \[
 \mu := E[Y^\ast_i]=E[X^\ast_i-1]=\sum_{x=1}^{\ell}(x-1)P(X^\ast_i=
 x).
@@ -297,7 +297,7 @@ the match complexity, $\cm$~\cite{pir19:hig}. Here we compare the
 theoretical values returned by \ty{mantile} to the quantiles of $\cm$
 values calculated from simulated sequences. We begin by generating a
 random 10 Mb sequence using \ty{ranseq} from the
-Biobox~\footnote{\ty{github.com/evolbioinf/ranseq}}. We scan this
+Biobox~\footnote{\ty{github.com/evolbioinf/biobox}}. We scan this
 sequence with a 10 kb window, cut out the $\cm$ values in the third
 column of the results, sort the $\cm$ values, and save them in the
 file \ty{cm.dat}. \bpr{man.sh}{pr:man}
@@ -311,8 +311,8 @@ file \ty{cm.dat}. \bpr{man.sh}{pr:man}
 #+begin_export latex
 \epr Now we read off the observed quantiles from \ty{cm.dat}. We do
 this using the script \ty{obs.sh}, where we count the number of lines
-in \ty{cm.dat}, $\ell$. Then we iterate in $n=100$ steps over the
-sorted $\cm$ values it contains. In each iteration we calculate the
+in \ty{cm.dat}, $l$. Then we iterate in $n=100$ steps over the sorted
+$\cm$ values it contains. In each iteration we calculate the
 cumulative probability, 0.01, 0.02, and so on. Then we calculate the
 line number corresponding to the probability and look up that
 quantile. At the end of each iteration we print the quantile.
@@ -339,7 +339,7 @@ since the bash only allows integer arithmetic.
 	  bc -l)
 #+end_src
 #+begin_export latex
-The cutoff line is $c=\ell p$ rounded to the nearest integer.
+The cutoff line is $c=l p$ rounded to the nearest integer.
 #+end_export
 #+begin_src sh <<Calculate cutoff line, Pr. \ref{pr:obs}>>=
   c=$(echo "$l * $p" |
@@ -370,10 +370,9 @@ file \ty{man.dat}.
 #+begin_export latex
 To get the expected values, we write another script, \ty{exp.sh},
 which also iterates across the quantiles in 1\,\% steps. However,
-since the 100\,\% quantile is infinity, we only iterate iterate over
-the first 99 steps. For each iteration we calculate the probability
-and the quantile, which we then print.
-\bpr{exp.sh}{pr:exp}
+since the 100\,\% quantile is infinity, we only iterate over the first
+99 steps. For each iteration we calculate the probability and the
+quantile, which we then print.  \bpr{exp.sh}{pr:exp}
 #+end_export
 #+begin_src sh <<exp.sh>>=
   n=100
