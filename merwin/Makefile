@@ -9,13 +9,13 @@ all: $(EXE)
 $(EXE): $(EXE).go
 	go build -ldflags "-X github.com/evolbioinf/auger/util.version=$(VERSION) -X github.com/evolbioinf/auger/util.date=$(DATE)" $(EXE).go
 $(EXE).go: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -R$(EXE).go | gofmt > $(EXE).go;\
 	fi
 test: $(EXE) $(EXE)_test.go
 	go test -v
 $(EXE)_test.go: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -R$(EXE)_test.go | gofmt > $(EXE)_test.go;\
 	fi
 clean:

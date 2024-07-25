@@ -9,25 +9,25 @@ all: $(EXE) exp.sh man.sh obs.sh
 $(EXE): $(EXE).go
 	go build -ldflags "-X github.com/evolbioinf/auger/util.version=$(VERSION) -X github.com/evolbioinf/auger/util.date=$(DATE)" $(EXE).go
 $(EXE).go: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -R$(EXE).go | gofmt > $(EXE).go;\
 	fi
 exp.sh: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -Rexp.sh > exp.sh;\
 	fi
 man.sh: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -Rman.sh > man.sh;\
 	fi
 obs.sh: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -Robs.sh > obs.sh;\
 	fi
 test: $(EXE) $(EXE)_test.go
 	go test -v
 $(EXE)_test.go: $(EXE).org
-	if [ $(NW) != "" ]; then\
+	if [ "$(NW)" != "" ]; then\
 		bash ../scripts/org2nw $(EXE).org | notangle -R$(EXE)_test.go | gofmt > $(EXE)_test.go;\
 	fi
 clean:

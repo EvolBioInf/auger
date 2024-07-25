@@ -1,7 +1,7 @@
 nw = $(shell which noweb)
 all: cli.sh
 cli.sh: cli.org
-	if [ $(nw) != "" ]; then\
+	if [ "$(nw)" != "" ]; then\
 		bash ../scripts/org2nw cli.org | notangle -Rcli > cli.sh;\
 	fi
 clean:
