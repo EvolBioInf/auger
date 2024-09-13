@@ -82,7 +82,7 @@ func main() {
 	clio.Usage(u, p, e)
 	optV := flag.Bool("v", false, "version")
 	optW := flag.Int("w", 10000, "window length")
-	optT := flag.Float64("t", 0.0, "threshold")
+	optT := flag.Float64("t", 0.0, "threshold, use mantile for C_m")
 	m := "minimizing, i. e. merge if x_i <= t " +
 		"(default maximizing, i. e. merge if x_i >= t)"
 	optI := flag.Bool("i", false, m)
